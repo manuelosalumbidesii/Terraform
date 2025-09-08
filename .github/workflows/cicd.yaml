@@ -40,6 +40,8 @@ jobs:
   slack-notification-team:
     needs: build-and-push
     runs-on: ubuntu-latest
+    environment:
+      name: qa-approval  # <- GitHub Environment requiring approval
     steps:
       - name: Send Team Slack Notifications
         uses: rtCamp/action-slack-notify@v2
@@ -48,9 +50,10 @@ jobs:
           SLACK_COLOR: '#ffcc00'
           SLACK_MESSAGE: |
             🧪 Build and push completed.
-            🔒 Waiting for QA approval to deploy to production.
-            👉 Approve deployment here: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          SLACK_TITLE: 'Awaiting QA Approval'
+            ✅ QA approval granted. Ready to deploy to production.
+            👉 Check workflow run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SLACK_TITLE: 'QA Approval Completed'
+
 
 
       
