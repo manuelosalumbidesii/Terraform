@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      id-token: write   # Required for OIDC
+      id-token: write
       contents: read
 
     steps:
@@ -36,4 +36,21 @@ jobs:
       - name: Terraform Apply
         working-directory: terraform
         run: terraform apply -auto-approve
-#
+
+  slack-notification-team:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Team Slack Notifications
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_COLOR: '#ffcc00'
+          SLACK_MESSAGE: |
+            🧪 Build and push completed.
+            🔒 Waiting for QA approval to deploy to production.
+            👉 Approve deployment here: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SLACK_TITLE: 'Awaiting QA Approval'
+
+
+      
