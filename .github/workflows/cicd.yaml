@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        env: [devs, prod]  # updated to match actual folder names
+        env: [devs, prod]  # matches your actual folder names
 
     permissions:
       id-token: write
@@ -35,16 +35,16 @@ jobs:
         with:
           terraform_version: 1.6.0
 
+      - name: Terraform Init
+        run: terraform init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
       - name: Terraform Format Check
         run: terraform fmt -check -recursive
         working-directory: ${{ env.TF_WORKING_DIR }}
 
       - name: Terraform Validate
         run: terraform validate
-        working-directory: ${{ env.TF_WORKING_DIR }}
-
-      - name: Terraform Init
-        run: terraform init
         working-directory: ${{ env.TF_WORKING_DIR }}
 
       - name: Terraform Plan
@@ -62,7 +62,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        env: [devs, prod]  # match the same matrix
+        env: [devs, prod]
 
     environment:
       name: ${{ matrix.env == 'prod' && 'production' || 'development' }}
@@ -99,6 +99,10 @@ jobs:
   slack-notification-team:
     needs: terraform-apply
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        env: [devs, prod]
+
     steps:
       - name: Send Team Slack Notifications
         uses: rtCamp/action-slack-notify@v2
