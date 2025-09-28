@@ -1,4 +1,4 @@
-name: Sample Terraform with CICD
+name: Terraform CI/CD
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  terraform:
+  terraform-plan:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -52,21 +52,21 @@ jobs:
         working-directory: ${{ env.TF_WORKING_DIR }}
 
       - name: Upload Plan Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: tfplan-${{ matrix.env }}
           path: ${{ env.TF_WORKING_DIR }}/tfplan-${{ matrix.env }}.out
 
   terraform-apply:
-    needs: terraform
+    needs: terraform-plan
     runs-on: ubuntu-latest
-    environment:
-      name: ${{ matrix.env == 'prod' && 'production' || 'development' }}
-      url: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-
     strategy:
       matrix:
         env: [dev, prod]
+
+    environment:
+      name: ${{ matrix.env == 'prod' && 'production' || 'development' }}
+      url: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
     env:
       TF_WORKING_DIR: terraform/envs/${{ matrix.env }}
@@ -87,7 +87,7 @@ jobs:
           terraform_version: 1.6.0
 
       - name: Download Plan Artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: tfplan-${{ matrix.env }}
           path: ${{ env.TF_WORKING_DIR }}
