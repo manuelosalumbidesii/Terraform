@@ -7,12 +7,18 @@ on:
     branches: [ main ]
 
 jobs:
-  build-and-push:
+  terraform:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        env: [dev, prod]
 
     permissions:
       id-token: write
       contents: read
+
+    env:
+      TF_WORKING_DIR: terraform/envs/${{ matrix.env }}
 
     steps:
       - name: Checkout repository
@@ -29,31 +35,77 @@ jobs:
         with:
           terraform_version: 1.6.0
 
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+      - name: Terraform Validate
+        run: terraform validate
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
       - name: Terraform Init
-        working-directory: terraform
         run: terraform init
+        working-directory: ${{ env.TF_WORKING_DIR }}
 
-      - name: Terraform Apply
-        working-directory: terraform
-        run: terraform apply -auto-approve
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan-${{ matrix.env }}.out
+        working-directory: ${{ env.TF_WORKING_DIR }}
 
-  slack-notification-team:
-    needs: build-and-push
+      - name: Upload Plan Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: tfplan-${{ matrix.env }}
+          path: ${{ env.TF_WORKING_DIR }}/tfplan-${{ matrix.env }}.out
+
+  terraform-apply:
+    needs: terraform
     runs-on: ubuntu-latest
     environment:
-      name: qa-approval  # <- GitHub Environment requiring approval
+      name: ${{ matrix.env == 'prod' && 'production' || 'development' }}
+      url: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+    strategy:
+      matrix:
+        env: [dev, prod]
+
+    env:
+      TF_WORKING_DIR: terraform/envs/${{ matrix.env }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::545209303902:role/GitHubActions-Terraform-Role
+          aws-region: us-east-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.6.0
+
+      - name: Download Plan Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: tfplan-${{ matrix.env }}
+          path: ${{ env.TF_WORKING_DIR }}
+
+      - name: Terraform Apply
+        run: terraform apply tfplan-${{ matrix.env }}.out
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+  slack-notification-team:
+    needs: terraform-apply
+    runs-on: ubuntu-latest
     steps:
       - name: Send Team Slack Notifications
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_COLOR: '#ffcc00'
+          SLACK_COLOR: '#36a64f'
           SLACK_MESSAGE: |
-            🧪 Build and push completed.
-            ✅ QA approval granted. Ready to deploy to production.
-            👉 Check workflow run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          SLACK_TITLE: 'QA Approval Completed'
-
-
-
-      
+            ✅ Terraform apply completed for *${{ matrix.env }}* environment.
+            🔗 [View workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          SLACK_TITLE: 'Terraform Deployment Success'
