@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        env: [dev, prod]
+        env: [devs, prod]  # updated to match actual folder names
 
     permissions:
       id-token: write
@@ -62,7 +62,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        env: [dev, prod]
+        env: [devs, prod]  # match the same matrix
 
     environment:
       name: ${{ matrix.env == 'prod' && 'production' || 'development' }}
