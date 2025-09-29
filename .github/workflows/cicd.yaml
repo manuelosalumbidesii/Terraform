@@ -7,18 +7,56 @@ on:
     branches: [ main ]
 
 jobs:
-  terraform:
+  terraform-devs:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        env: [devs, prod]
-
     permissions:
       id-token: write
       contents: read
 
     env:
-      TF_WORKING_DIR: terraform/envs/${{ matrix.env }}
+      TF_WORKING_DIR: terraform/envs/devs
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::545209303902:role/GitHubActions-Terraform-Role
+          aws-region: us-east-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.6.0
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+      - name: Terraform Validate
+        run: terraform validate
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main'
+        run: terraform apply -auto-approve
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+  terraform-prod:
+    needs: terraform-devs
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    env:
+      TF_WORKING_DIR: terraform/envs/prod
 
     steps:
       - name: Checkout code
@@ -53,11 +91,8 @@ jobs:
         working-directory: ${{ env.TF_WORKING_DIR }}
 
   slack-notify:
-    needs: terraform
+    needs: [terraform-devs, terraform-prod]
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        env: [devs, prod]
 
     steps:
       - name: Send Slack Notification
@@ -67,5 +102,5 @@ jobs:
           SLACK_COLOR: '#36a64f'
           SLACK_TITLE: 'Terraform Deployment Success'
           SLACK_MESSAGE: |
-            ✅ Terraform apply completed for *${{ matrix.env }}* environment.
+            ✅ Terraform apply completed for both *devs* and *prod* environments.
             🔗 [View workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
