@@ -1,2 +1,5 @@
-vpc_cidr = "10.0.0.0/16"
-vpc_name = "dev-vpc"
+vpc_cidr           = "10.0.0.0/16"
+vpc_name           = "dev-vpc"
+env                = "dev"
+public_subnet_cidr = "10.0.1.0/24"
+az                 = "ap-southeast-1a"
