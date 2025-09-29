@@ -50,3 +50,19 @@ jobs:
           terraform apply -auto-approve -parallelism=10 -var-file=terraform.tfvars
           echo "End Apply: $(date)"
         working-directory: ${{ env.TF_WORKING_DIR }}
+
+  slack-notify:
+    needs: terraform-dev
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Send Slack Notification
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_COLOR: '#36a64f'
+          SLACK_TITLE: 'Terraform Dev Deployment Success'
+          SLACK_MESSAGE: |
+            🚀 *Terraform Apply Completed*
+            ✅ Environment: *dev*
+            🔍 [View workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
