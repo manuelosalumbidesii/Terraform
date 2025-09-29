@@ -1,4 +1,4 @@
-name: Simple Terraform CI/CD
+name: Terraform Dev CI/CD
 
 on:
   push:
@@ -7,11 +7,14 @@ on:
     branches: [ main ]
 
 jobs:
-  terraform:
+  terraform-dev:
     runs-on: ubuntu-latest
     permissions:
       id-token: write
       contents: read
+
+    env:
+      TF_WORKING_DIR: envs/dev
 
     steps:
       - name: Checkout code
@@ -30,16 +33,20 @@ jobs:
 
       - name: Terraform Init
         run: terraform init
+        working-directory: ${{ env.TF_WORKING_DIR }}
 
       - name: Terraform Format Check
         run: terraform fmt -check -recursive
+        working-directory: ${{ env.TF_WORKING_DIR }}
 
       - name: Terraform Validate
         run: terraform validate
+        working-directory: ${{ env.TF_WORKING_DIR }}
 
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main'
         run: |
           echo "Start Apply: $(date)"
-          terraform apply -auto-approve -parallelism=10
+          terraform apply -auto-approve -parallelism=10 -var-file=terraform.tfvars
           echo "End Apply: $(date)"
+        working-directory: ${{ env.TF_WORKING_DIR }}
