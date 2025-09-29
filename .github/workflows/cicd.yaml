@@ -1,4 +1,4 @@
-name: Terraform CI/CD
+name: Simple Terraform CI/CD
 
 on:
   push:
@@ -7,14 +7,11 @@ on:
     branches: [ main ]
 
 jobs:
-  terraform-devs:
+  terraform:
     runs-on: ubuntu-latest
     permissions:
       id-token: write
       contents: read
-
-    env:
-      TF_WORKING_DIR: terraform/envs/devs
 
     steps:
       - name: Checkout code
@@ -33,15 +30,12 @@ jobs:
 
       - name: Terraform Init
         run: terraform init
-        working-directory: ${{ env.TF_WORKING_DIR }}
 
       - name: Terraform Format Check
         run: terraform fmt -check -recursive
-        working-directory: ${{ env.TF_WORKING_DIR }}
 
       - name: Terraform Validate
         run: terraform validate
-        working-directory: ${{ env.TF_WORKING_DIR }}
 
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main'
@@ -49,65 +43,3 @@ jobs:
           echo "Start Apply: $(date)"
           terraform apply -auto-approve -parallelism=10
           echo "End Apply: $(date)"
-        working-directory: ${{ env.TF_WORKING_DIR }}
-
-  terraform-prod:
-    needs: terraform-devs
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-
-    env:
-      TF_WORKING_DIR: terraform/envs/prod
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Configure AWS credentials via OIDC
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          role-to-assume: arn:aws:iam::545209303902:role/GitHubActions-Terraform-Role
-          aws-region: us-east-1
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_version: 1.6.0
-
-      - name: Terraform Init
-        run: terraform init
-        working-directory: ${{ env.TF_WORKING_DIR }}
-
-      - name: Terraform Format Check
-        run: terraform fmt -check -recursive
-        working-directory: ${{ env.TF_WORKING_DIR }}
-
-      - name: Terraform Validate
-        run: terraform validate
-        working-directory: ${{ env.TF_WORKING_DIR }}
-
-      - name: Terraform Apply
-        if: github.ref == 'refs/heads/main'
-        run: |
-          echo "Start Apply: $(date)"
-          terraform apply -auto-approve -parallelism=10
-          echo "End Apply: $(date)"
-        working-directory: ${{ env.TF_WORKING_DIR }}
-
-  slack-notify:
-    needs: [terraform-devs, terraform-prod]
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Send Slack Notification
-        uses: rtCamp/action-slack-notify@v2
-        env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_COLOR: '#36a64f'
-          SLACK_TITLE: 'Terraform Deployment Success'
-          SLACK_MESSAGE: |
-            🚀 *Terraform Deployment Completed*
-            ✅ Environments: *devs* and *prod*
-            🔍 [View workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
