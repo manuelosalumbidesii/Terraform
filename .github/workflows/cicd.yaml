@@ -24,6 +24,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: Ensure Terraform Plugin Cache Directory Exists
+        run: mkdir -p ~/.terraform.d/plugin-cache
+
       - name: Cache Terraform Plugin Directory
         uses: actions/cache@v3
         with:
