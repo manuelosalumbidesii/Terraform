@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        env: [devs, prod]  # matches your actual folder names
+        env: [devs, prod]
 
     permissions:
       id-token: write
@@ -23,6 +23,12 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+
+      - name: Cache Terraform Plugin Directory
+        uses: actions/cache@v3
+        with:
+          path: ~/.terraform.d/plugin-cache
+          key: terraform-plugins-${{ runner.os }}-${{ hashFiles('**/*.tf') }}
 
       - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v2
@@ -36,7 +42,7 @@ jobs:
           terraform_version: 1.6.0
 
       - name: Terraform Init
-        run: terraform init
+        run: terraform init -plugin-dir=~/.terraform.d/plugin-cache
         working-directory: ${{ env.TF_WORKING_DIR }}
 
       - name: Terraform Format Check
@@ -47,8 +53,12 @@ jobs:
         run: terraform validate
         working-directory: ${{ env.TF_WORKING_DIR }}
 
-      - name: Terraform Plan
-        run: terraform plan -out=tfplan-${{ matrix.env }}.out
+      - name: Terraform Plan (Optimized)
+        run: |
+          echo "🕒 Start time: $(date)"
+          export TF_LOG=ERROR
+          terraform plan -out=tfplan-${{ matrix.env }}.out -parallelism=5
+          echo "✅ Plan completed at: $(date)"
         working-directory: ${{ env.TF_WORKING_DIR }}
 
       - name: Upload Plan Artifact
@@ -93,7 +103,7 @@ jobs:
           path: ${{ env.TF_WORKING_DIR }}
 
       - name: Terraform Apply
-        run: terraform apply tfplan-${{ matrix.env }}.out
+        run: terraform apply -auto-approve tfplan-${{ matrix.env }}.out
         working-directory: ${{ env.TF_WORKING_DIR }}
 
   slack-notification-team:
