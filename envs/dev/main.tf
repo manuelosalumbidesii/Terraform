@@ -10,16 +10,16 @@ module "network" {
 
 //data "aws_vpc" "existing" {
 //  filter {
- //   name   = "tag:Name"
-   // values = ["dev-vpc"]
-  //}
+//     name   = "tag:Name"
+// values = ["dev-vpc"]
+// }
 
-  //filter {
-    //name   = "cidr-block"
-    //values = ["10.0.0.0/16"] # match your vpc_cidr
-  //}
+//filter {
+//name   = "cidr-block"
+//values = ["10.0.0.0/16"] # match your vpc_cidr
+//}
 
-  //tags = {
-    //Environment = "dev"
-  //}
+//tags = {
+//Environment = "dev"
+//}
 //}
