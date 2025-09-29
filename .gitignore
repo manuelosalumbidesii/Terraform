@@ -10,7 +10,6 @@ crash.log
 .terraform/*
 
 # Ignore any secret variable files
-*.tfvars
 *.tfvars.json
 *.env
 
