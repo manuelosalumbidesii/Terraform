@@ -45,7 +45,10 @@ jobs:
 
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main'
-        run: terraform apply -auto-approve
+        run: |
+          echo "Start Apply: $(date)"
+          terraform apply -auto-approve -parallelism=10
+          echo "End Apply: $(date)"
         working-directory: ${{ env.TF_WORKING_DIR }}
 
   terraform-prod:
@@ -87,7 +90,10 @@ jobs:
 
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main'
-        run: terraform apply -auto-approve
+        run: |
+          echo "Start Apply: $(date)"
+          terraform apply -auto-approve -parallelism=10
+          echo "End Apply: $(date)"
         working-directory: ${{ env.TF_WORKING_DIR }}
 
   slack-notify:
@@ -102,5 +108,6 @@ jobs:
           SLACK_COLOR: '#36a64f'
           SLACK_TITLE: 'Terraform Deployment Success'
           SLACK_MESSAGE: |
-            ✅ Terraform apply completed for both *devs* and *prod* environments.
-            🔗 [View workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            🚀 *Terraform Deployment Completed*
+            ✅ Environments: *devs* and *prod*
+            🔍 [View workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
