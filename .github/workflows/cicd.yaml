@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  terraform-plan:
+  terraform:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -21,17 +21,8 @@ jobs:
       TF_WORKING_DIR: terraform/envs/${{ matrix.env }}
 
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v3
-
-      - name: Ensure Terraform Plugin Cache Directory Exists
-        run: mkdir -p ~/.terraform.d/plugin-cache
-
-      - name: Cache Terraform Plugin Directory
-        uses: actions/cache@v3
-        with:
-          path: ~/.terraform.d/plugin-cache
-          key: terraform-plugins-${{ runner.os }}-${{ hashFiles('**/*.tf') }}
 
       - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v2
@@ -45,7 +36,9 @@ jobs:
           terraform_version: 1.6.0
 
       - name: Terraform Init
-        run: terraform init -plugin-dir=~/.terraform.d/plugin-cache
+        run: |
+          mkdir -p ~/.terraform.d/plugin-cache
+          terraform init -plugin-dir=~/.terraform.d/plugin-cache
         working-directory: ${{ env.TF_WORKING_DIR }}
 
       - name: Terraform Format Check
@@ -56,73 +49,22 @@ jobs:
         run: terraform validate
         working-directory: ${{ env.TF_WORKING_DIR }}
 
-      - name: Terraform Plan (Optimized)
-        run: |
-          echo "🕒 Start time: $(date)"
-          export TF_LOG=ERROR
-          terraform plan -out=tfplan-${{ matrix.env }}.out -parallelism=5
-          echo "✅ Plan completed at: $(date)"
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan-${{ matrix.env }}.out -parallelism=5
         working-directory: ${{ env.TF_WORKING_DIR }}
 
-      - name: Upload Plan Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: tfplan-${{ matrix.env }}
-          path: ${{ env.TF_WORKING_DIR }}/tfplan-${{ matrix.env }}.out
-
-  terraform-apply:
-    needs: terraform-plan
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        env: [devs, prod]
-
-    environment:
-      name: ${{ matrix.env == 'prod' && 'production' || 'development' }}
-      url: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-
-    env:
-      TF_WORKING_DIR: terraform/envs/${{ matrix.env }}
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Configure AWS credentials via OIDC
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          role-to-assume: arn:aws:iam::545209303902:role/GitHubActions-Terraform-Role
-          aws-region: us-east-1
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_version: 1.6.0
-
-      - name: Download Plan Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: tfplan-${{ matrix.env }}
-          path: ${{ env.TF_WORKING_DIR }}
-
       - name: Terraform Apply
+        if: github.ref == 'refs/heads/main'
         run: terraform apply -auto-approve tfplan-${{ matrix.env }}.out
         working-directory: ${{ env.TF_WORKING_DIR }}
 
-  slack-notification-team:
-    needs: terraform-apply
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        env: [devs, prod]
-
-    steps:
-      - name: Send Team Slack Notifications
+      - name: Slack Notification
+        if: success()
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_COLOR: '#36a64f'
+          SLACK_TITLE: 'Terraform Deployment Success'
           SLACK_MESSAGE: |
             ✅ Terraform apply completed for *${{ matrix.env }}* environment.
             🔗 [View workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
-          SLACK_TITLE: 'Terraform Deployment Success'
