@@ -47,17 +47,20 @@ jobs:
         run: terraform validate
         working-directory: ${{ env.TF_WORKING_DIR }}
 
-      - name: Terraform Plan
-        run: terraform plan -out=tfplan-${{ matrix.env }}.out -parallelism=5
-        working-directory: ${{ env.TF_WORKING_DIR }}
-
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main'
-        run: terraform apply -auto-approve tfplan-${{ matrix.env }}.out
+        run: terraform apply -auto-approve
         working-directory: ${{ env.TF_WORKING_DIR }}
 
-      - name: Slack Notification
-        if: success()
+  slack-notify:
+    needs: terraform
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        env: [devs, prod]
+
+    steps:
+      - name: Send Slack Notification
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
