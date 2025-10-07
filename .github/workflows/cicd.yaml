@@ -69,6 +69,6 @@ jobs:
           SLACK_COLOR: '#36a64f'
           SLACK_TITLE: 'Terraform Dev Deployment Success'
           SLACK_MESSAGE: |
-            🚀 *Terraform Apply Completeddd*
+            🚀 *Terraform Apply Completed*
             ✅ Environment: *dev*
             🔍 [View workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
