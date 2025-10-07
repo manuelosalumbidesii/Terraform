@@ -15,7 +15,8 @@ jobs:
 
     env:
       TF_WORKING_DIR: envs/dev
-      TF_VAR_FILE: envs/dev/terraform.tfvars
+      AWS_REGION: us-east-2
+      AWS_DEFAULT_REGION: us-east-2
 
     steps:
       - name: Checkout code
@@ -25,7 +26,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v2
         with:
           role-to-assume: arn:aws:iam::545209303902:role/GitHubActions-Terraform-Role
-          aws-region: us-east-2
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
@@ -45,14 +46,14 @@ jobs:
         working-directory: ${{ env.TF_WORKING_DIR }}
 
       - name: Terraform Plan
-        run: terraform plan -var-file=${{ env.TF_VAR_FILE }}
+        run: terraform plan -var-file=terraform.tfvars
         working-directory: ${{ env.TF_WORKING_DIR }}
 
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main'
         run: |
           echo "Start Apply: $(date)"
-          terraform apply -auto-approve -parallelism=10 -var-file=${{ env.TF_VAR_FILE }}
+          terraform apply -auto-approve -parallelism=10 -var-file=terraform.tfvars
           echo "End Apply: $(date)"
         working-directory: ${{ env.TF_WORKING_DIR }}
 
