@@ -76,7 +76,7 @@ resource "aws_security_group" "web_sg" {
   }
 
   tags = {
-    Name        = "${var.env}-web-sg"
-    Environment = var.env
+       Name        = "${var.env}-web-sg"
+       Environment = var.env
   }
 }
