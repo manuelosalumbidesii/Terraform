@@ -22,3 +22,17 @@ variable "az" {
   description = "Availability Zone for the subnet"
   type        = string
 }
+
+
+variable "ami" {}
+variable "instance_type" {}
+variable "subnet_id" {}
+variable "security_group_ids" {
+  type = list(string)
+}
+variable "associate_public_ip" {
+  type    = bool
+  default = true
+}
+variable "name" {}
+variable "env" {}

@@ -3,3 +3,6 @@ vpc_name           = "dev-vpc"
 env                = "dev"
 public_subnet_cidr = "10.0.1.0/24"
 az                 = "us-east-2a"
+
+ami                 = "ami-0abc123456789def"
+instance_type       = "t2.micro"
