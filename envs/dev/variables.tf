@@ -35,4 +35,3 @@ variable "associate_public_ip" {
   default = true
 }
 variable "name" {}
-variable "env" {}
