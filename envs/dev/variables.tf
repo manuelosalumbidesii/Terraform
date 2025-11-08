@@ -23,15 +23,34 @@ variable "az" {
   type        = string
 }
 
+variable "ami" {
+  description = "AMI ID for the EC2 instance"
+  type        = string
+}
 
-variable "ami" {}
-variable "instance_type" {}
-variable "subnet_id" {}
+variable "instance_type" {
+  description = "EC2 instance type"
+  type        = string
+  default     = "t3.micro"
+}
+
+variable "subnet_id" {
+  description = "Subnet ID where the EC2 instance will be deployed"
+  type        = string
+}
+
 variable "security_group_ids" {
-  type = list(string)
+  description = "List of security group IDs to attach to the EC2 instance"
+  type        = list(string)
 }
+
 variable "associate_public_ip" {
-  type    = bool
-  default = true
+  description = "Whether to associate a public IP with the EC2 instance"
+  type        = bool
+  default     = true
 }
-variable "name" {}
+
+variable "name" {
+  description = "Name tag for the EC2 instance"
+  type        = string
+}
