@@ -67,7 +67,7 @@ jobs:
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_COLOR: '#36a64f'
-          SLACK_TITLE: 'Terraform Dev Deployment Success'
+          SLACK_TITLE: 'Terraform Dev Deployment Successs'
           SLACK_MESSAGE: |
             🚀 *Terraform Apply Completed*
             ✅ Environment: *dev*
